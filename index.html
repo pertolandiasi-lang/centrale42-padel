@@ -193,7 +193,8 @@
     // ============================================================
     // PASTE YOUR GOOGLE APPS SCRIPT URL HERE
     // ============================================================
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby9c2i59mXletlQnOvCe4d2AIUCwo0dnN9_Jz9CR2ZM5GSXjKoTAx8B-8s3Wtg6hALq/exec";
+    const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycby9c2i59mXletlQnOvCe4d2AIUCwo0dnN9_Jz9CR2ZM5GSXjKoTAx8B-8s3Wtg6hALq/exec";
+    const SECRET_TOKEN = "0a93337723f95f02924ebae8cb0690425544b832145bcd9d";
     // ============================================================
 
     const OPENING_HOUR = 8;
@@ -278,7 +279,7 @@
     // ─── API ───────────────────────────────────────────────────
     async function loadBookings() {
       try {
-        const res  = await fetch(`${SCRIPT_URL}?action=list&_=${Date.now()}`, { redirect: "follow" });
+        const res  = await fetch(`${SCRIPT_URL}?action=list&token=${SECRET_TOKEN}&_=${Date.now()}`, { redirect: "follow" });
         const data = await res.json();
         if (data.bookings) {
           const newKeys = data.bookings;
@@ -291,7 +292,7 @@
     }
 
     async function submitBooking(key, firstname, lastname, phone, date, time) {
-      const url = `${SCRIPT_URL}?action=book&key=${encodeURIComponent(key)}&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&firstname=${encodeURIComponent(firstname)}&lastname=${encodeURIComponent(lastname)}&phone=${encodeURIComponent(phone)}&_=${Date.now()}`;
+      const url = `${SCRIPT_URL}?action=book&token=${SECRET_TOKEN}&key=${encodeURIComponent(key)}&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&firstname=${encodeURIComponent(firstname)}&lastname=${encodeURIComponent(lastname)}&phone=${encodeURIComponent(phone)}&_=${Date.now()}`;
       const res = await fetch(url, { redirect: "follow" });
       return res.json();
     }
@@ -597,7 +598,7 @@
     // ─── Init ──────────────────────────────────────────────────
     render();
     loadBookings();
-    setInterval(loadBookings, 8000);
+    setInterval(loadBookings, 30000);
   </script>
 </body>
 </html>

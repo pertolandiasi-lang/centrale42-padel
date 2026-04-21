@@ -12,7 +12,14 @@
 // 8. Paste that URL in index.html where it says SCRIPT_URL
 // ============================================================
 
+const SECRET_TOKEN = "0a93337723f95f02924ebae8cb0690425544b832145bcd9d";
+
 function doGet(e) {
+  // Reject any request that doesn't include the correct token
+  if (e.parameter.token !== SECRET_TOKEN) {
+    return jsonResponse({ error: "Non autorizzato" });
+  }
+
   const action = e.parameter.action;
   try {
     if (action === "list")  return listBookings();
@@ -61,20 +68,42 @@ function createBooking(params) {
     return jsonResponse({ error: "Parametri mancanti" });
   }
 
-  const sheet   = getSheet();
-  const lastRow = sheet.getLastRow();
-
-  // Check if slot already taken
-  if (lastRow > 1) {
-    const keys = sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat();
-    if (keys.includes(key)) {
-      return jsonResponse({ error: "Slot già prenotato" });
-    }
+  // Validate key format: YYYY-MM-DD_HHMM
+  if (!/^\d{4}-\d{2}-\d{2}_\d{4}$/.test(key)) {
+    return jsonResponse({ error: "Richiesta non valida" });
   }
 
-  const dateStr = Utilities.formatDate(new Date(), "Europe/Rome", "dd/MM/yyyy HH:mm");
-  sheet.appendRow([key, date, time, firstname, lastname, phone, dateStr]);
-  return jsonResponse({ ok: true });
+  // Reject bookings in the past
+  const datePart = key.split("_")[0];
+  const timePart = key.split("_")[1];
+  const slotDate = new Date(`${datePart}T${timePart.slice(0,2)}:${timePart.slice(2,4)}:00`);
+  if (slotDate < new Date()) {
+    return jsonResponse({ error: "Non puoi prenotare un orario passato" });
+  }
+
+  // Use LockService to prevent race conditions (double bookings)
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000); // wait up to 10 seconds for the lock
+
+    const sheet   = getSheet();
+    const lastRow = sheet.getLastRow();
+
+    // Check if slot already taken
+    if (lastRow > 1) {
+      const keys = sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat();
+      if (keys.includes(key)) {
+        return jsonResponse({ error: "Slot già prenotato" });
+      }
+    }
+
+    const dateStr = Utilities.formatDate(new Date(), "Europe/Rome", "dd/MM/yyyy HH:mm");
+    sheet.appendRow([key, date, time, firstname, lastname, phone, dateStr]);
+    return jsonResponse({ ok: true });
+
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function jsonResponse(data) {
