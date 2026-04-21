@@ -28,14 +28,15 @@ function getSheet() {
   let sheet = ss.getSheetByName("Prenotazioni");
   if (!sheet) {
     sheet = ss.insertSheet("Prenotazioni");
-    sheet.appendRow(["Chiave", "Data Scelta", "Orario Scelto", "Nome e Cognome", "Telefono", "Data e Ora di prenotazione"]);
-    sheet.getRange(1, 1, 1, 6).setFontWeight("bold");
+    sheet.appendRow(["Chiave", "Data Scelta", "Orario Scelto", "Nome", "Cognome", "Telefono", "Data e Ora di prenotazione"]);
+    sheet.getRange(1, 1, 1, 7).setFontWeight("bold");
     sheet.setColumnWidth(1, 160);
     sheet.setColumnWidth(2, 120);
     sheet.setColumnWidth(3, 160);
-    sheet.setColumnWidth(4, 180);
+    sheet.setColumnWidth(4, 140);
     sheet.setColumnWidth(5, 140);
-    sheet.setColumnWidth(6, 200);
+    sheet.setColumnWidth(6, 140);
+    sheet.setColumnWidth(7, 200);
   }
   return sheet;
 }
@@ -49,13 +50,14 @@ function listBookings() {
 }
 
 function createBooking(params) {
-  const key   = params.key;
-  const date  = params.date  || "";
-  const time  = params.time  || "";
-  const name  = params.name;
-  const phone = params.phone;
+  const key       = params.key;
+  const date      = params.date      || "";
+  const time      = params.time      || "";
+  const firstname = params.firstname || "";
+  const lastname  = params.lastname  || "";
+  const phone     = params.phone;
 
-  if (!key || !name || !phone) {
+  if (!key || !firstname || !lastname || !phone) {
     return jsonResponse({ error: "Parametri mancanti" });
   }
 
@@ -71,7 +73,7 @@ function createBooking(params) {
   }
 
   const dateStr = Utilities.formatDate(new Date(), "Europe/Rome", "dd/MM/yyyy HH:mm");
-  sheet.appendRow([key, date, time, name, phone, dateStr]);
+  sheet.appendRow([key, date, time, firstname, lastname, phone, dateStr]);
   return jsonResponse({ ok: true });
 }
 
