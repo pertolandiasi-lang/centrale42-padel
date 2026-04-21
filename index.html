@@ -109,11 +109,11 @@
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               NOME
             </div>
-            <input id="input-firstname" type="text" placeholder="Mario"
+            <input id="input-firstname" type="text" placeholder="Mario" autocomplete="given-name"
               style="width:100%;padding:0.875rem 1rem;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem;color:white;font-size:1rem;transition:border-color 0.2s,background 0.2s;"
               onfocus="this.style.borderColor='rgba(163,230,53,0.5)';this.style.background='rgba(0,0,0,0.6)'"
               onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(0,0,0,0.4)'"
-              oninput="checkBookForm()" />
+              oninput="checkBookForm()" onchange="checkBookForm()" />
           </label>
 
           <label style="display:block;">
@@ -121,11 +121,11 @@
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               COGNOME
             </div>
-            <input id="input-lastname" type="text" placeholder="Rossi"
+            <input id="input-lastname" type="text" placeholder="Rossi" autocomplete="family-name"
               style="width:100%;padding:0.875rem 1rem;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem;color:white;font-size:1rem;transition:border-color 0.2s,background 0.2s;"
               onfocus="this.style.borderColor='rgba(163,230,53,0.5)';this.style.background='rgba(0,0,0,0.6)'"
               onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(0,0,0,0.4)'"
-              oninput="checkBookForm()" />
+              oninput="checkBookForm()" onchange="checkBookForm()" />
           </label>
 
           <label style="display:block;">
@@ -133,11 +133,11 @@
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.07 13 19.79 19.79 0 0 1 1 4.18 2 2 0 0 1 2.98 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9a16 16 0 0 0 6.91 6.91l.22-.22a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
               TELEFONO
             </div>
-            <input id="input-phone" type="tel" placeholder="333 1234567"
+            <input id="input-phone" type="tel" placeholder="333 1234567" autocomplete="tel"
               style="width:100%;padding:0.875rem 1rem;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem;color:white;font-size:1rem;transition:border-color 0.2s,background 0.2s;"
               onfocus="this.style.borderColor='rgba(163,230,53,0.5)';this.style.background='rgba(0,0,0,0.6)'"
               onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(0,0,0,0.4)'"
-              oninput="checkBookForm()" />
+              oninput="checkBookForm()" onchange="checkBookForm()" />
           </label>
 
           <div id="modal-error" style="display:none;font-size:12px;color:#fca5a5;background:rgba(127,29,29,0.4);border:1px solid rgba(153,27,27,0.4);border-radius:0.75rem;padding:0.75rem 1rem;"></div>
@@ -324,7 +324,8 @@
         `<span style="font-size:12px;color:#d9f99d;font-weight:500;letter-spacing:0.1em;">${s.slot.label} → ${s.slot.endLabel} · 90 MIN</span>`;
 
       document.getElementById("modal-book").style.display = "flex";
-      setTimeout(() => document.getElementById("input-firstname").focus(), 80);
+      setTimeout(() => { document.getElementById("input-firstname").focus(); checkBookForm(); }, 80);
+      setTimeout(checkBookForm, 500);
     }
 
     function checkBookForm() {
