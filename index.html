@@ -140,6 +140,10 @@
               oninput="checkBookForm()" onchange="checkBookForm()" />
           </label>
 
+          <!-- Honeypot: invisible to humans, bots fill it automatically -->
+          <input id="input-hp" type="text" name="website" tabindex="-1" autocomplete="off"
+            style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true" />
+
           <div id="modal-error" style="display:none;font-size:12px;color:#fca5a5;background:rgba(127,29,29,0.4);border:1px solid rgba(153,27,27,0.4);border-radius:0.75rem;padding:0.75rem 1rem;"></div>
 
           <button id="btn-confirm" onclick="confirmBooking()" disabled
@@ -312,6 +316,7 @@
       document.getElementById("input-firstname").value = "";
       document.getElementById("input-lastname").value  = "";
       document.getElementById("input-phone").value     = "";
+      document.getElementById("input-hp").value        = "";
       document.getElementById("modal-error").style.display = "none";
       checkBookForm();
 
@@ -364,7 +369,11 @@
       const firstname = document.getElementById("input-firstname").value.trim();
       const lastname  = document.getElementById("input-lastname").value.trim();
       const phone     = document.getElementById("input-phone").value.trim();
+      const honeypot  = document.getElementById("input-hp").value;
       const errEl     = document.getElementById("modal-error");
+
+      // Honeypot: if filled, it's a bot — silently reject
+      if (honeypot) return;
 
       errEl.style.display = "none";
       if (!firstname || !lastname || !phone) { errEl.textContent = "Compila tutti i campi"; errEl.style.display = "block"; return; }
