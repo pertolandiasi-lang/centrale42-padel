@@ -36,8 +36,8 @@ function getSheet() {
   let sheet = ss.getSheetByName("Prenotazioni");
   if (!sheet) {
     sheet = ss.insertSheet("Prenotazioni");
-    sheet.appendRow(["Chiave", "Data Scelta", "Orario Scelto", "Nome", "Cognome", "Telefono", "Data e Ora di prenotazione"]);
-    sheet.getRange(1, 1, 1, 7).setFontWeight("bold");
+    sheet.appendRow(["Chiave", "Data Scelta", "Orario Scelto", "Nome", "Cognome", "Telefono", "Data e Ora di prenotazione", "Messaggio WhatsApp"]);
+    sheet.getRange(1, 1, 1, 8).setFontWeight("bold");
     sheet.setColumnWidth(1, 160);
     sheet.setColumnWidth(2, 120);
     sheet.setColumnWidth(3, 160);
@@ -45,6 +45,7 @@ function getSheet() {
     sheet.setColumnWidth(5, 140);
     sheet.setColumnWidth(6, 140);
     sheet.setColumnWidth(7, 200);
+    sheet.setColumnWidth(8, 420);
   }
   return sheet;
 }
@@ -73,8 +74,8 @@ function createBooking(params) {
   const recaptchaToken = params.recaptcha || "";
   if (recaptchaToken) {
     const verifyRes  = UrlFetchApp.fetch(
-      `https://www.google.com/recaptcha/api/siteverify?secret=${RECAPTCHA_SECRET}&response=${recaptchaToken}`,
-      { method: "post" }
+      "https://www.google.com/recaptcha/api/siteverify",
+      { method: "post", payload: { secret: RECAPTCHA_SECRET, response: recaptchaToken } }
     );
     const verifyData = JSON.parse(verifyRes.getContentText());
     if (!verifyData.success || verifyData.score < 0.5) {
@@ -112,7 +113,8 @@ function createBooking(params) {
     }
 
     const dateStr = Utilities.formatDate(new Date(), "Europe/Rome", "dd/MM/yyyy HH:mm");
-    sheet.appendRow([key, date, time, firstname, lastname, phone, dateStr]);
+    const whatsappMsg = "Ciao " + firstname + "! 👋 Ti scriviamo da Centrale 42 Padel. Hai una prenotazione per il " + date + " dalle " + time + ". Puoi confermarci la tua presenza? Rispondi CONFERMO per tenerla o CANCELLO se non puoi venire. Grazie! 🎾";
+    sheet.appendRow([key, date, time, firstname, lastname, phone, dateStr, whatsappMsg]);
     return jsonResponse({ ok: true });
 
   } finally {
