@@ -57,7 +57,7 @@
   <div class="grain"></div>
 
   <!-- HEADER -->
-  <header style="position:sticky;top:0;z-index:10;border-bottom:1px solid rgba(255,255,255,0.05);backdrop-filter:blur(20px);background:rgba(0,0,0,0.2);">
+  <header style="position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(255,255,255,0.05);backdrop-filter:blur(20px);background:rgba(0,0,0,0.2);">
     <div style="max-width:64rem;margin:0 auto;padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;">
       <div style="display:flex;align-items:center;gap:0.875rem;cursor:pointer;" class="animate-fade-in" onclick="backToCalendar()">
         <div class="pulse-dot" style="width:2.75rem;height:2.75rem;border-radius:50%;background:linear-gradient(135deg,#bef264,#84cc16);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(132,204,22,0.3);flex-shrink:0;">
@@ -112,7 +112,8 @@
             <input id="input-name" type="text" placeholder="Mario Rossi"
               style="width:100%;padding:0.875rem 1rem;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem;color:white;font-size:1rem;transition:border-color 0.2s,background 0.2s;"
               onfocus="this.style.borderColor='rgba(163,230,53,0.5)';this.style.background='rgba(0,0,0,0.6)'"
-              onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(0,0,0,0.4)'" />
+              onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(0,0,0,0.4)'"
+              oninput="checkBookForm()" />
           </label>
 
           <label style="display:block;">
@@ -123,20 +124,21 @@
             <input id="input-phone" type="tel" placeholder="333 1234567"
               style="width:100%;padding:0.875rem 1rem;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem;color:white;font-size:1rem;transition:border-color 0.2s,background 0.2s;"
               onfocus="this.style.borderColor='rgba(163,230,53,0.5)';this.style.background='rgba(0,0,0,0.6)'"
-              onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(0,0,0,0.4)'" />
+              onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(0,0,0,0.4)'"
+              oninput="checkBookForm()" />
           </label>
 
           <div id="modal-error" style="display:none;font-size:12px;color:#fca5a5;background:rgba(127,29,29,0.4);border:1px solid rgba(153,27,27,0.4);border-radius:0.75rem;padding:0.75rem 1rem;"></div>
 
-          <button id="btn-confirm" onclick="confirmBooking()"
-            style="width:100%;margin-top:0.5rem;background:#a3e635;color:#0c0a09;padding:1rem;border-radius:9999px;font-weight:600;font-size:15px;letter-spacing:0.05em;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0.5rem;box-shadow:0 4px 15px rgba(163,230,53,0.2);transition:all 0.2s;"
+          <button id="btn-confirm" onclick="confirmBooking()" disabled
+            style="width:100%;margin-top:0.5rem;background:#a3e635;color:#0c0a09;padding:1rem;border-radius:9999px;font-weight:600;font-size:15px;letter-spacing:0.05em;border:none;cursor:not-allowed;display:flex;align-items:center;justify-content:center;gap:0.5rem;box-shadow:0 4px 15px rgba(163,230,53,0.2);transition:all 0.2s;opacity:0.4;"
             onmouseover="if(!this.disabled)this.style.background='#bef264'" onmouseout="if(!this.disabled)this.style.background='#a3e635'">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             Conferma prenotazione
           </button>
 
-          <p style="font-size:10px;color:#44403c;text-align:center;line-height:1.6;padding-top:0.25rem;">
-            I tuoi dati sono visibili ai soci del circolo per il coordinamento delle prenotazioni.
+          <p style="font-size:10px;color:#57534e;text-align:center;line-height:1.6;padding-top:0.25rem;">
+            Attenzione: se i dati inseriti sono errati o non siamo in grado di contattarti al numero indicato, la prenotazione verrà annullata.
           </p>
         </div>
       </div>
@@ -311,6 +313,16 @@
       setTimeout(() => document.getElementById("input-name").focus(), 80);
     }
 
+    function checkBookForm() {
+      const name  = document.getElementById("input-name").value.trim();
+      const phone = document.getElementById("input-phone").value.trim();
+      const btn   = document.getElementById("btn-confirm");
+      const ready = name.length > 0 && phone.length >= 6;
+      btn.disabled     = !ready;
+      btn.style.opacity = ready ? "1" : "0.4";
+      btn.style.cursor  = ready ? "pointer" : "not-allowed";
+    }
+
     function closeBookModal() {
       if (submitting) return;
       document.getElementById("modal-book").style.display = "none";
@@ -328,6 +340,7 @@
 
     function closeConfirmModal() {
       document.getElementById("modal-confirm").style.display = "none";
+      render();
     }
 
     async function confirmBooking() {
