@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Centrale 42 · Padel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(ellipse at top, #1a1f1a 0%, #0a0d0b 50%, #050706 100%);
+      min-height: 100vh;
+      color: #e7e5e4;
+    }
+
+    .font-display { font-family: 'Fraunces', Georgia, serif; }
+
+    .grain {
+      position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+
+    @keyframes fadeUp       { from { opacity:0; transform:translateY(8px);  } to { opacity:1; transform:translateY(0);  } }
+    @keyframes fadeIn       { from { opacity:0; }                             to { opacity:1; }                           }
+    @keyframes scaleIn      { from { opacity:0; transform:scale(0.96);      } to { opacity:1; transform:scale(1);       } }
+    @keyframes slideInRight { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0);  } }
+    @keyframes glow         { 0%,100% { box-shadow:0 0 20px rgba(190,242,100,0.15); } 50% { box-shadow:0 0 30px rgba(190,242,100,0.3); } }
+    @keyframes spin         { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+
+    .animate-fade-up   { animation: fadeUp       0.5s  ease-out                        both; }
+    .animate-fade-in   { animation: fadeIn        0.3s  ease-out                        both; }
+    .animate-scale-in  { animation: scaleIn       0.25s cubic-bezier(0.16,1,0.3,1)     both; }
+    .animate-slide-in  { animation: slideInRight  0.35s cubic-bezier(0.16,1,0.3,1)     both; }
+    .animate-spin      { animation: spin          1s    linear                    infinite;    }
+    .pulse-dot         { animation: glow          2s    ease-in-out               infinite;    }
+
+    .day-cell  { transition: all 0.18s cubic-bezier(0.16,1,0.3,1); }
+    .day-cell:not(:disabled):hover  { transform: translateY(-1px); }
+    .slot-row  { transition: all 0.18s cubic-bezier(0.16,1,0.3,1); }
+    .slot-row:not(:disabled):hover  { transform: translateX(2px);  }
+
+    input { font-family: inherit; }
+    input::placeholder { color: #44403c; }
+    input:focus { outline: none; }
+
+    ::-webkit-scrollbar       { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- HEADER -->
+  <header style="position:sticky;top:0;z-index:10;border-bottom:1px solid rgba(255,255,255,0.05);backdrop-filter:blur(20px);background:rgba(0,0,0,0.2);">
+    <div style="max-width:64rem;margin:0 auto;padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:0.875rem;" class="animate-fade-in">
+        <div class="pulse-dot" style="width:2.75rem;height:2.75rem;border-radius:50%;background:linear-gradient(135deg,#bef264,#84cc16);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(132,204,22,0.3);flex-shrink:0;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#0a0d0b" stroke-width="2.2">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M3 12 Q 12 6, 21 12" fill="none"/>
+            <path d="M3 12 Q 12 18, 21 12" fill="none"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:9px;letter-spacing:0.35em;color:rgba(163,230,53,0.8);font-weight:600;">PADEL · CLUB</div>
+          <div class="font-display" style="font-size:1.25rem;font-weight:600;letter-spacing:-0.025em;line-height:1;color:white;">Centrale 42</div>
+        </div>
+      </div>
+      <button onclick="goToToday()"
+        style="font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;padding:0.625rem 1rem;border-radius:9999px;background:#a3e635;color:#0c0a09;border:none;cursor:pointer;box-shadow:0 4px 15px rgba(163,230,53,0.2);transition:background 0.2s;"
+        onmouseover="this.style.background='#bef264'" onmouseout="this.style.background='#a3e635'">
+        Oggi
+      </button>
+    </div>
+  </header>
+
+  <!-- APP CONTENT -->
+  <main id="app" style="position:relative;z-index:10;max-width:64rem;margin:0 auto;padding:2rem 1.5rem 5rem;"></main>
+
+  <!-- MODAL PRENOTAZIONE -->
+  <div id="modal-book"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(12px);z-index:20;align-items:flex-end;justify-content:center;padding:1rem;"
+    onclick="closeBookModal()">
+    <div style="width:100%;max-width:28rem;" class="animate-scale-in" onclick="event.stopPropagation()">
+      <div style="border-radius:1.5rem;padding:2rem 2.25rem;border:1px solid rgba(255,255,255,0.1);box-shadow:0 25px 50px rgba(0,0,0,0.5);background:linear-gradient(180deg,#1a1f1a 0%,#0f1310 100%);">
+
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.75rem;">
+          <div>
+            <div style="font-size:10px;letter-spacing:0.3em;color:rgba(163,230,53,0.8);font-weight:600;margin-bottom:0.5rem;">NUOVA PRENOTAZIONE</div>
+            <div class="font-display" id="modal-date-text" style="font-size:1.875rem;font-weight:500;letter-spacing:-0.025em;color:white;line-height:1.25;"></div>
+            <div id="modal-time-badge" style="margin-top:0.75rem;display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.75rem;border-radius:9999px;background:rgba(163,230,53,0.1);border:1px solid rgba(163,230,53,0.2);"></div>
+          </div>
+          <button onclick="closeBookModal()"
+            style="width:2.25rem;height:2.25rem;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#a8a29e;flex-shrink:0;transition:background 0.2s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <label style="display:block;">
+            <div style="display:flex;align-items:center;gap:0.5rem;font-size:10px;letter-spacing:0.25em;font-weight:600;color:#78716c;margin-bottom:0.5rem;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              NOME E COGNOME
+            </div>
+            <input id="input-name" type="text" placeholder="Mario Rossi"
+              style="width:100%;padding:0.875rem 1rem;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem;color:white;font-size:1rem;transition:border-color 0.2s,background 0.2s;"
+              onfocus="this.style.borderColor='rgba(163,230,53,0.5)';this.style.background='rgba(0,0,0,0.6)'"
+              onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(0,0,0,0.4)'" />
+          </label>
+
+          <label style="display:block;">
+            <div style="display:flex;align-items:center;gap:0.5rem;font-size:10px;letter-spacing:0.25em;font-weight:600;color:#78716c;margin-bottom:0.5rem;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.07 13 19.79 19.79 0 0 1 1 4.18 2 2 0 0 1 2.98 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9a16 16 0 0 0 6.91 6.91l.22-.22a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              TELEFONO
+            </div>
+            <input id="input-phone" type="tel" placeholder="333 1234567"
+              style="width:100%;padding:0.875rem 1rem;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem;color:white;font-size:1rem;transition:border-color 0.2s,background 0.2s;"
+              onfocus="this.style.borderColor='rgba(163,230,53,0.5)';this.style.background='rgba(0,0,0,0.6)'"
+              onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(0,0,0,0.4)'" />
+          </label>
+
+          <div id="modal-error" style="display:none;font-size:12px;color:#fca5a5;background:rgba(127,29,29,0.4);border:1px solid rgba(153,27,27,0.4);border-radius:0.75rem;padding:0.75rem 1rem;"></div>
+
+          <button id="btn-confirm" onclick="confirmBooking()"
+            style="width:100%;margin-top:0.5rem;background:#a3e635;color:#0c0a09;padding:1rem;border-radius:9999px;font-weight:600;font-size:15px;letter-spacing:0.05em;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0.5rem;box-shadow:0 4px 15px rgba(163,230,53,0.2);transition:all 0.2s;"
+            onmouseover="if(!this.disabled)this.style.background='#bef264'" onmouseout="if(!this.disabled)this.style.background='#a3e635'">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Conferma prenotazione
+          </button>
+
+          <p style="font-size:10px;color:#44403c;text-align:center;line-height:1.6;padding-top:0.25rem;">
+            I tuoi dati sono visibili ai soci del circolo per il coordinamento delle prenotazioni.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" style="display:none;position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);z-index:30;" class="animate-scale-in">
+    <div style="background:rgba(28,25,23,0.95);backdrop-filter:blur(20px);color:white;padding:0.875rem 1.25rem;border-radius:9999px;font-size:14px;font-weight:500;box-shadow:0 25px 50px rgba(0,0,0,0.5);border:1px solid rgba(163,230,53,0.2);display:flex;align-items:center;gap:0.625rem;white-space:nowrap;">
+      <div style="width:1.5rem;height:1.5rem;border-radius:50%;background:#a3e635;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0c0a09" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <span id="toast-text"></span>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // PASTE YOUR GOOGLE APPS SCRIPT URL HERE
+    // ============================================================
+    const SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
+    // ============================================================
+
+    const OPENING_HOUR = 8;
+    const CLOSING_HOUR = 23;
+    const SLOT_MINUTES = 90;
+
+    const DAYS_IT      = ["LUN","MAR","MER","GIO","VEN","SAB","DOM"];
+    const DAYS_FULL_IT = ["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
+    const MONTHS_IT    = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+
+    // ─── Generate time slots ───────────────────────────────────
+    function generateSlots() {
+      const slots = [];
+      let min = OPENING_HOUR * 60;
+      const end = CLOSING_HOUR * 60;
+      while (min + SLOT_MINUTES <= end) {
+        const h  = Math.floor(min / 60),              m  = min % 60;
+        const eh = Math.floor((min + SLOT_MINUTES) / 60), em = (min + SLOT_MINUTES) % 60;
+        slots.push({
+          key:      `${pad(h)}${pad(m)}`,
+          label:    `${pad(h)}:${pad(m)}`,
+          endLabel: `${pad(eh)}:${pad(em)}`,
+        });
+        min += SLOT_MINUTES;
+      }
+      return slots;
+    }
+    function pad(n) { return String(n).padStart(2, "0"); }
+
+    const SLOTS = generateSlots();
+
+    // ─── State ─────────────────────────────────────────────────
+    const today  = new Date();
+    let viewMonth    = new Date(today.getFullYear(), today.getMonth(), 1);
+    let selectedDate = null;
+    let bookings     = new Set();
+    let loading      = true;
+    let selectedSlot = null;
+    let submitting   = false;
+
+    // ─── Helpers ───────────────────────────────────────────────
+    function fmtKey(date) {
+      return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+    }
+    function bookingKey(date, slotKey) { return `${fmtKey(date)}_${slotKey}`; }
+    function sameDay(a, b) {
+      return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+    }
+    function isPastDay(date) {
+      const t = new Date(); t.setHours(0,0,0,0);
+      const d = new Date(date); d.setHours(0,0,0,0);
+      return d < t;
+    }
+    function isPastSlot(date, key) {
+      const s = new Date(date);
+      s.setHours(parseInt(key.slice(0,2)), parseInt(key.slice(2,4)), 0, 0);
+      return s < new Date();
+    }
+    function buildGrid(year, month) {
+      const first     = new Date(year, month, 1);
+      const weekday   = (first.getDay() + 6) % 7;
+      const daysInM   = new Date(year, month+1, 0).getDate();
+      const daysInPM  = new Date(year, month, 0).getDate();
+      const cells = [];
+      for (let i = weekday-1; i >= 0; i--)
+        cells.push({ date: new Date(year, month-1, daysInPM-i), cur: false });
+      for (let d = 1; d <= daysInM; d++)
+        cells.push({ date: new Date(year, month, d), cur: true });
+      while (cells.length < 42) {
+        const last = cells[cells.length-1].date;
+        const next = new Date(last); next.setDate(next.getDate()+1);
+        cells.push({ date: next, cur: false });
+      }
+      return cells;
+    }
+    function dayBooked(date)    { return SLOTS.filter(s => bookings.has(bookingKey(date, s.key))).length; }
+    function dayAvailable(date) {
+      if (isPastDay(date)) return 0;
+      return SLOTS.filter(s => !bookings.has(bookingKey(date, s.key)) && !isPastSlot(date, s.key)).length;
+    }
+
+    // ─── API ───────────────────────────────────────────────────
+    async function loadBookings() {
+      try {
+        const res  = await fetch(`${SCRIPT_URL}?action=list&_=${Date.now()}`, { redirect: "follow" });
+        const data = await res.json();
+        if (data.bookings) bookings = new Set(data.bookings);
+      } catch (e) { console.error(e); }
+      finally { loading = false; render(); }
+    }
+
+    async function submitBooking(key, name, phone) {
+      const url = `${SCRIPT_URL}?action=book&key=${encodeURIComponent(key)}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&_=${Date.now()}`;
+      const res = await fetch(url, { redirect: "follow" });
+      return res.json();
+    }
+
+    // ─── Toast ─────────────────────────────────────────────────
+    let toastTimer;
+    function showToast(msg) {
+      document.getElementById("toast-text").textContent = msg;
+      document.getElementById("toast").style.display = "block";
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { document.getElementById("toast").style.display = "none"; }, 3000);
+    }
+
+    // ─── Modal ─────────────────────────────────────────────────
+    function openBookModal(slotIdx) {
+      selectedSlot = { date: selectedDate, slot: SLOTS[slotIdx] };
+      document.getElementById("input-name").value  = "";
+      document.getElementById("input-phone").value = "";
+      document.getElementById("modal-error").style.display = "none";
+
+      const s = selectedSlot;
+      document.getElementById("modal-date-text").innerHTML =
+        `${DAYS_FULL_IT[s.date.getDay()]} ${s.date.getDate()}<br>` +
+        `<span style="color:#a8a29e;font-style:italic;font-weight:300;">${MONTHS_IT[s.date.getMonth()]}</span>`;
+
+      document.getElementById("modal-time-badge").innerHTML =
+        `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#a3e635" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>` +
+        `<span style="font-size:12px;color:#d9f99d;font-weight:500;letter-spacing:0.1em;">${s.slot.label} → ${s.slot.endLabel} · 90 MIN</span>`;
+
+      document.getElementById("modal-book").style.display = "flex";
+      setTimeout(() => document.getElementById("input-name").focus(), 80);
+    }
+
+    function closeBookModal() {
+      if (submitting) return;
+      document.getElementById("modal-book").style.display = "none";
+      selectedSlot = null;
+    }
+
+    async function confirmBooking() {
+      const name  = document.getElementById("input-name").value.trim();
+      const phone = document.getElementById("input-phone").value.trim();
+      const errEl = document.getElementById("modal-error");
+
+      errEl.style.display = "none";
+      if (!name || !phone)      { errEl.textContent = "Inserisci nome e telefono"; errEl.style.display = "block"; return; }
+      if (phone.length < 6)     { errEl.textContent = "Numero di telefono non valido"; errEl.style.display = "block"; return; }
+      if (!selectedSlot) return;
+
+      submitting = true;
+      const btn  = document.getElementById("btn-confirm");
+      btn.disabled = true;
+      btn.style.opacity = "0.5";
+      btn.innerHTML = `<svg class="animate-spin" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Attendi...`;
+
+      const key = bookingKey(selectedSlot.date, selectedSlot.slot.key);
+
+      try {
+        const result = await submitBooking(key, name, phone);
+        if (result.error) {
+          errEl.textContent  = result.error === "Slot già prenotato"
+            ? "Questo slot è stato appena prenotato da qualcun altro"
+            : result.error;
+          errEl.style.display = "block";
+          loadBookings();
+        } else {
+          bookings.add(key);
+          closeBookModal();
+          showToast(`Prenotazione confermata · ${selectedSlot.slot.label}`);
+          selectedSlot = null;
+          render();
+        }
+      } catch (e) {
+        errEl.textContent  = "Errore di connessione. Riprova.";
+        errEl.style.display = "block";
+      } finally {
+        submitting       = false;
+        btn.disabled     = false;
+        btn.style.opacity = "1";
+        btn.innerHTML    = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Conferma prenotazione`;
+      }
+    }
+
+    // ─── Navigation ────────────────────────────────────────────
+    function prevMonth()     { viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1); render(); }
+    function nextMonth()     { viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth()+1, 1); render(); }
+    function goToToday()     { viewMonth = new Date(today.getFullYear(), today.getMonth(), 1); selectedDate = null; render(); }
+    function selectDate(y,m,d){ selectedDate = new Date(y,m,d); render(); }
+    function backToCalendar(){ selectedDate = null; render(); }
+
+    // ─── Render ────────────────────────────────────────────────
+    function render() { document.getElementById("app").innerHTML = selectedDate ? renderSlots() : renderCalendar(); }
+
+    function renderCalendar() {
+      const grid  = buildGrid(viewMonth.getFullYear(), viewMonth.getMonth());
+      const total = grid.filter(c => c.cur).reduce((a, c) => a + dayBooked(c.date), 0);
+
+      const dayCells = grid.map((cell) => {
+        const isToday    = sameDay(cell.date, today);
+        const past       = isPastDay(cell.date);
+        const booked     = dayBooked(cell.date);
+        const available  = dayAvailable(cell.date);
+        const full       = cell.cur && !past && available === 0 && booked > 0;
+        const disabled   = past || !cell.cur;
+
+        let bg, textColor, border, cursor, shadow;
+        if (!cell.cur)    { bg="transparent";              textColor="rgba(255,255,255,0.15)"; border="transparent";              cursor="not-allowed"; shadow=""; }
+        else if (past)    { bg="rgba(255,255,255,0.02)";   textColor="#44403c";                border="transparent";              cursor="not-allowed"; shadow=""; }
+        else if (isToday) { bg="linear-gradient(135deg,#bef264,#84cc16)"; textColor="#0c0a09"; border="transparent"; cursor="pointer"; shadow="box-shadow:0 4px 12px rgba(132,204,22,0.3);"; }
+        else if (full)    { bg="rgba(41,37,36,0.6)";       textColor="#78716c";                border="rgba(255,255,255,0.05)";   cursor="pointer"; shadow=""; }
+        else              { bg="rgba(255,255,255,0.03)";   textColor="white";                  border="rgba(255,255,255,0.05)";   cursor="pointer"; shadow=""; }
+
+        let dots = "";
+        if (cell.cur && !past) {
+          if (full)        dots = `<span style="font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:#57534e;font-weight:600;">Pieno</span>`;
+          else if (booked) dots = `<div style="display:flex;gap:2px;">${Array.from({length:Math.min(booked,3)}).map(()=>`<div style="width:4px;height:4px;border-radius:50%;background:${isToday?"rgba(12,10,9,0.7)":"rgba(163,230,53,0.7)"}"></div>`).join("")}${booked>3?`<span style="font-size:8px;color:${isToday?"rgba(12,10,9,0.7)":"rgba(163,230,53,0.7)"}">+</span>`:""}</div>`;
+          else             dots = `<div style="width:4px;height:4px;border-radius:50%;background:${isToday?"rgba(12,10,9,0.4)":"#44403c"};"></div>`;
+        }
+
+        const onClick = disabled ? "" : `onclick="selectDate(${cell.date.getFullYear()},${cell.date.getMonth()},${cell.date.getDate()})"`;
+        const hover   = disabled ? "" : `onmouseover="this.style.background='${isToday?"#bef264":full?"rgba(68,64,60,0.6)":"rgba(255,255,255,0.08)"}';${isToday?"":"this.style.borderColor='rgba(163,230,53,0.3)'"}"  onmouseout="this.style.background='${bg}';this.style.borderColor='${border}'"`;
+
+        return `<button class="day-cell" ${disabled?"disabled":""} ${onClick} ${hover}
+          style="aspect-ratio:4/5;border-radius:0.75rem;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0.25rem;background:${bg};color:${textColor};border:1px solid ${border};cursor:${cursor};${shadow}">
+          <div class="font-display" style="font-size:clamp(0.8rem,3vw,1.5rem);font-weight:500;line-height:1;">${cell.date.getDate()}</div>
+          ${dots ? `<div style="margin-top:4px;display:flex;align-items:center;justify-content:center;">${dots}</div>` : ""}
+        </button>`;
+      }).join("");
+
+      return `<div class="animate-fade-up">
+        <div style="margin-bottom:2.5rem;">
+          <div style="font-size:10px;letter-spacing:0.35em;color:rgba(163,230,53,0.7);font-weight:600;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            PRENOTAZIONE CAMPO
+          </div>
+          <h1 class="font-display" style="font-size:clamp(2.25rem,8vw,3.75rem);font-weight:300;letter-spacing:-0.025em;color:white;line-height:0.95;">
+            Scegli <em style="font-style:italic;font-weight:400;color:#a3e635;">il giorno</em>.
+          </h1>
+          <p style="margin-top:0.75rem;color:#78716c;font-size:14px;max-width:28rem;line-height:1.6;">
+            Seleziona una data sul calendario per vedere tutti gli orari disponibili.
+          </p>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.5rem;">
+          <button onclick="prevMonth()" style="width:2.75rem;height:2.75rem;border-radius:0.75rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#d6d3d1;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div style="text-align:center;flex:1;">
+            <div style="font-size:10px;letter-spacing:0.3em;color:#57534e;font-weight:500;margin-bottom:2px;">MESE</div>
+            <div class="font-display" style="font-size:clamp(1.25rem,4vw,1.5rem);font-weight:500;letter-spacing:-0.025em;color:white;">
+              ${MONTHS_IT[viewMonth.getMonth()]} <span style="color:#57534e;font-weight:300;">${viewMonth.getFullYear()}</span>
+            </div>
+          </div>
+          <button onclick="nextMonth()" style="width:2.75rem;height:2.75rem;border-radius:0.75rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#d6d3d1;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+        ${loading
+          ? `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6rem 0;color:#57534e;">
+               <svg class="animate-spin" style="margin-bottom:0.75rem;color:#a3e635;" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+               <span style="font-size:11px;letter-spacing:0.2em;">CARICAMENTO</span>
+             </div>`
+          : `<div style="border-radius:1rem;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);padding:0.75rem;">
+               <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:0.375rem;margin-bottom:0.5rem;">
+                 ${DAYS_IT.map(d=>`<div style="text-align:center;padding:0.5rem 0;font-size:10px;letter-spacing:0.25em;font-weight:600;color:#57534e;">${d}</div>`).join("")}
+               </div>
+               <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:0.375rem;">${dayCells}</div>
+             </div>
+
+             <div style="margin-top:1.5rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem;font-size:12px;">
+               <div style="display:flex;flex-wrap:wrap;gap:1rem;color:#57534e;">
+                 <div style="display:flex;align-items:center;gap:0.5rem;"><div style="width:14px;height:14px;border-radius:3px;background:linear-gradient(135deg,#bef264,#84cc16)"></div><span>Oggi</span></div>
+                 <div style="display:flex;align-items:center;gap:0.5rem;"><div style="display:flex;gap:2px;"><div style="width:4px;height:4px;border-radius:50%;background:rgba(163,230,53,0.7)"></div><div style="width:4px;height:4px;border-radius:50%;background:rgba(163,230,53,0.7)"></div></div><span>Prenotazioni attive</span></div>
+                 <div style="display:flex;align-items:center;gap:0.5rem;"><div style="width:14px;height:14px;border-radius:3px;background:rgba(41,37,36,0.6)"></div><span>Completo</span></div>
+               </div>
+               ${total > 0 ? `<div style="color:#57534e;"><span style="color:white;font-weight:500;">${total}</span> prenotazioni questo mese</div>` : ""}
+             </div>`
+        }
+      </div>`;
+    }
+
+    function renderSlots() {
+      const avail  = dayAvailable(selectedDate);
+      const booked = dayBooked(selectedDate);
+
+      const slotRows = SLOTS.map((slot, idx) => {
+        const key      = bookingKey(selectedDate, slot.key);
+        const isBooked = bookings.has(key);
+        const past     = isPastSlot(selectedDate, slot.key);
+
+        if (past) return `
+          <div class="slot-row" style="display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;border-radius:1rem;background:rgba(255,255,255,0.02);border:1px solid transparent;opacity:0.4;">
+            <div style="min-width:70px;">
+              <div class="font-display" style="font-size:1.5rem;font-weight:500;color:#44403c;line-height:1;">${slot.label}</div>
+              <div style="font-size:10px;color:#292524;margin-top:3px;">→ ${slot.endLabel}</div>
+            </div>
+            <div style="width:1px;height:2.5rem;background:rgba(255,255,255,0.05);"></div>
+            <div style="font-size:10px;letter-spacing:0.25em;color:#44403c;font-weight:600;">PASSATO</div>
+          </div>`;
+
+        if (isBooked) return `
+          <div class="slot-row" style="display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;border-radius:1rem;background:rgba(41,37,36,0.6);border:1px solid rgba(255,255,255,0.05);">
+            <div style="min-width:70px;">
+              <div class="font-display" style="font-size:1.5rem;font-weight:500;color:#78716c;line-height:1;">${slot.label}</div>
+              <div style="font-size:10px;color:#57534e;margin-top:3px;">→ ${slot.endLabel}</div>
+            </div>
+            <div style="width:1px;height:2.5rem;background:rgba(255,255,255,0.1);"></div>
+            <div style="flex:1;">
+              <div style="font-size:10px;letter-spacing:0.25em;color:#57534e;font-weight:600;margin-bottom:2px;">NON DISPONIBILE</div>
+              <div style="font-size:14px;color:#78716c;">Slot prenotato · 90 min</div>
+            </div>
+            <div style="width:2.25rem;height:2.25rem;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#78716c" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+          </div>`;
+
+        return `
+          <button class="slot-row" onclick="openBookModal(${idx})"
+            style="display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;border-radius:1rem;background:linear-gradient(to right,rgba(163,230,53,0.08),transparent);border:1px solid rgba(163,230,53,0.2);cursor:pointer;text-align:left;width:100%;transition:all 0.18s;"
+            onmouseover="this.style.background='linear-gradient(to right,rgba(163,230,53,0.15),transparent)';this.style.borderColor='rgba(163,230,53,0.4)'"
+            onmouseout="this.style.background='linear-gradient(to right,rgba(163,230,53,0.08),transparent)';this.style.borderColor='rgba(163,230,53,0.2)'">
+            <div style="min-width:70px;">
+              <div class="font-display" style="font-size:1.5rem;font-weight:500;color:white;line-height:1;">${slot.label}</div>
+              <div style="font-size:10px;color:#57534e;margin-top:3px;">→ ${slot.endLabel}</div>
+            </div>
+            <div style="width:1px;height:2.5rem;background:rgba(163,230,53,0.2);"></div>
+            <div style="flex:1;">
+              <div style="font-size:10px;letter-spacing:0.25em;color:rgba(163,230,53,0.8);font-weight:600;margin-bottom:2px;">DISPONIBILE</div>
+              <div style="font-size:14px;color:#d6d3d1;">Tocca per prenotare · 90 min</div>
+            </div>
+            <div style="width:2.25rem;height:2.25rem;border-radius:50%;background:#a3e635;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(163,230,53,0.2);flex-shrink:0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0c0a09" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </button>`;
+      }).join("");
+
+      return `<div class="animate-slide-in">
+        <button onclick="backToCalendar()" style="display:flex;align-items:center;gap:0.5rem;color:#78716c;background:none;border:none;cursor:pointer;margin-bottom:1.5rem;font-size:14px;letter-spacing:0.05em;transition:color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#78716c'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Torna al calendario
+        </button>
+
+        <div style="margin-bottom:2rem;">
+          <div style="font-size:10px;letter-spacing:0.35em;color:rgba(163,230,53,0.7);font-weight:600;margin-bottom:0.5rem;">
+            ${DAYS_FULL_IT[selectedDate.getDay()].toUpperCase()}
+          </div>
+          <h1 class="font-display" style="font-size:clamp(3rem,10vw,3.75rem);font-weight:300;letter-spacing:-0.025em;color:white;line-height:0.95;">
+            ${selectedDate.getDate()} <em style="font-style:italic;font-weight:400;color:#a3e635;">${MONTHS_IT[selectedDate.getMonth()].toLowerCase()}</em>
+          </h1>
+          <div style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.5rem;font-size:12px;">
+            <div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.75rem;border-radius:9999px;background:rgba(163,230,53,0.1);border:1px solid rgba(163,230,53,0.2);">
+              <div style="width:6px;height:6px;border-radius:50%;background:#a3e635;"></div>
+              <span style="color:#d9f99d;font-weight:500;letter-spacing:0.1em;">${avail} DISPONIBILI</span>
+            </div>
+            ${booked > 0
+              ? `<div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.75rem;border-radius:9999px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);">
+                   <div style="width:6px;height:6px;border-radius:50%;background:#a8a29e;"></div>
+                   <span style="color:#d6d3d1;font-weight:500;letter-spacing:0.1em;">${booked} PRENOTATI</span>
+                 </div>`
+              : ""}
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">${slotRows}</div>
+      </div>`;
+    }
+
+    // ─── Init ──────────────────────────────────────────────────
+    render();
+    loadBookings();
+    setInterval(loadBookings, 8000);
+  </script>
+</body>
+</html>
