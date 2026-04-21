@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Centrale 42 · Padel</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.google.com/recaptcha/api.js?render=6LeUFsMsAAAAAKnPO_cjSuutA3237KEu_yGEtg0T"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -197,8 +198,9 @@
     // ============================================================
     // PASTE YOUR GOOGLE APPS SCRIPT URL HERE
     // ============================================================
-    const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbyYvo7xyddJOlC5CqAUgrtWW8MamSYPw9MFOUZxddzIm4QT1q1W7ydYNVh3X__vZO2C/exec";
-    const SECRET_TOKEN = "0a93337723f95f02924ebae8cb0690425544b832145bcd9d";
+    const SCRIPT_URL        = "https://script.google.com/macros/s/AKfycbyYvo7xyddJOlC5CqAUgrtWW8MamSYPw9MFOUZxddzIm4QT1q1W7ydYNVh3X__vZO2C/exec";
+    const SECRET_TOKEN      = "0a93337723f95f02924ebae8cb0690425544b832145bcd9d";
+    const RECAPTCHA_SITE_KEY = "6LeUFsMsAAAAAKnPO_cjSuutA3237KEu_yGEtg0T";
     // ============================================================
 
     const OPENING_HOUR = 8;
@@ -295,8 +297,8 @@
       finally { if (loading) { loading = false; render(); } }
     }
 
-    async function submitBooking(key, firstname, lastname, phone, date, time) {
-      const url = `${SCRIPT_URL}?action=book&token=${SECRET_TOKEN}&key=${encodeURIComponent(key)}&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&firstname=${encodeURIComponent(firstname)}&lastname=${encodeURIComponent(lastname)}&phone=${encodeURIComponent(phone)}&_=${Date.now()}`;
+    async function submitBooking(key, firstname, lastname, phone, date, time, recaptchaToken) {
+      const url = `${SCRIPT_URL}?action=book&token=${SECRET_TOKEN}&recaptcha=${encodeURIComponent(recaptchaToken)}&key=${encodeURIComponent(key)}&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&firstname=${encodeURIComponent(firstname)}&lastname=${encodeURIComponent(lastname)}&phone=${encodeURIComponent(phone)}&_=${Date.now()}`;
       const res = await fetch(url, { redirect: "follow" });
       return res.json();
     }
@@ -391,8 +393,17 @@
       const dateFormatted = `${pad(s.date.getDate())}/${pad(s.date.getMonth()+1)}/${s.date.getFullYear()}`;
       const timeFormatted = `${s.slot.label} → ${s.slot.endLabel}`;
 
+      // Get reCAPTCHA v3 token
+      let recaptchaToken = "";
       try {
-        const result = await submitBooking(key, firstname, lastname, phone, dateFormatted, timeFormatted);
+        await new Promise(resolve => grecaptcha.ready(resolve));
+        recaptchaToken = await grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: "book" });
+      } catch(e) {
+        console.warn("reCAPTCHA error:", e);
+      }
+
+      try {
+        const result = await submitBooking(key, firstname, lastname, phone, dateFormatted, timeFormatted, recaptchaToken);
         if (result.error) {
           errEl.textContent  = result.error === "Slot già prenotato"
             ? "Questo slot è stato appena prenotato da qualcun altro"

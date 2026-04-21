@@ -12,7 +12,8 @@
 // 8. Paste that URL in index.html where it says SCRIPT_URL
 // ============================================================
 
-const SECRET_TOKEN = "0a93337723f95f02924ebae8cb0690425544b832145bcd9d";
+const SECRET_TOKEN      = "0a93337723f95f02924ebae8cb0690425544b832145bcd9d";
+const RECAPTCHA_SECRET  = "6LeUFsMsAAAAAMZtf-bfzzbLe7DZG6oLhrBznkpK";
 
 function doGet(e) {
   // Reject any request that doesn't include the correct token
@@ -66,6 +67,19 @@ function createBooking(params) {
 
   if (!key || !firstname || !lastname || !phone) {
     return jsonResponse({ error: "Parametri mancanti" });
+  }
+
+  // Verify reCAPTCHA v3 token
+  const recaptchaToken = params.recaptcha || "";
+  if (recaptchaToken) {
+    const verifyRes  = UrlFetchApp.fetch(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${RECAPTCHA_SECRET}&response=${recaptchaToken}`,
+      { method: "post" }
+    );
+    const verifyData = JSON.parse(verifyRes.getContentText());
+    if (!verifyData.success || verifyData.score < 0.5) {
+      return jsonResponse({ error: "Verifica di sicurezza fallita. Riprova." });
+    }
   }
 
   // Validate key format: YYYY-MM-DD_HHMM
