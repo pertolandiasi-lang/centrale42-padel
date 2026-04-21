@@ -59,7 +59,7 @@
   <!-- HEADER -->
   <header style="position:sticky;top:0;z-index:10;border-bottom:1px solid rgba(255,255,255,0.05);backdrop-filter:blur(20px);background:rgba(0,0,0,0.2);">
     <div style="max-width:64rem;margin:0 auto;padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;">
-      <div style="display:flex;align-items:center;gap:0.875rem;" class="animate-fade-in">
+      <div style="display:flex;align-items:center;gap:0.875rem;cursor:pointer;" class="animate-fade-in" onclick="backToCalendar()">
         <div class="pulse-dot" style="width:2.75rem;height:2.75rem;border-radius:50%;background:linear-gradient(135deg,#bef264,#84cc16);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(132,204,22,0.3);flex-shrink:0;">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#0a0d0b" stroke-width="2.2">
             <circle cx="12" cy="12" r="9"/>
@@ -139,6 +139,28 @@
             I tuoi dati sono visibili ai soci del circolo per il coordinamento delle prenotazioni.
           </p>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONFERMA -->
+  <div id="modal-confirm"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);z-index:25;align-items:center;justify-content:center;padding:1rem;"
+    onclick="closeConfirmModal()">
+    <div style="width:100%;max-width:26rem;" class="animate-scale-in" onclick="event.stopPropagation()">
+      <div style="border-radius:1.5rem;padding:2.5rem 2.25rem;border:1px solid rgba(163,230,53,0.25);box-shadow:0 25px 50px rgba(0,0,0,0.6);background:linear-gradient(180deg,#1a1f1a 0%,#0f1310 100%);text-align:center;position:relative;">
+        <button onclick="closeConfirmModal()"
+          style="position:absolute;top:1.25rem;right:1.25rem;width:2.25rem;height:2.25rem;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#a8a29e;transition:background 0.2s;"
+          onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div style="width:4rem;height:4rem;border-radius:50%;background:linear-gradient(135deg,#bef264,#84cc16);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;box-shadow:0 8px 25px rgba(132,204,22,0.35);">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0c0a09" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div style="font-size:10px;letter-spacing:0.3em;color:rgba(163,230,53,0.8);font-weight:600;margin-bottom:0.75rem;">PRENOTAZIONE CONFERMATA</div>
+        <div class="font-display" id="confirm-date" style="font-size:1.75rem;font-weight:500;letter-spacing:-0.025em;color:white;line-height:1.2;margin-bottom:0.75rem;"></div>
+        <div id="confirm-time" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 1rem;border-radius:9999px;background:rgba(163,230,53,0.1);border:1px solid rgba(163,230,53,0.2);font-size:13px;color:#d9f99d;font-weight:500;letter-spacing:0.08em;"></div>
+        <p style="margin-top:1.75rem;font-size:12px;color:#57534e;line-height:1.6;">Ci vediamo in campo!</p>
       </div>
     </div>
   </div>
@@ -244,13 +266,18 @@
       try {
         const res  = await fetch(`${SCRIPT_URL}?action=list&_=${Date.now()}`, { redirect: "follow" });
         const data = await res.json();
-        if (data.bookings) bookings = new Set(data.bookings);
+        if (data.bookings) {
+          const newKeys = data.bookings;
+          const changed = loading || newKeys.length !== bookings.size || newKeys.some(k => !bookings.has(k));
+          bookings = new Set(newKeys);
+          if (changed) { loading = false; render(); return; }
+        }
       } catch (e) { console.error(e); }
-      finally { loading = false; render(); }
+      finally { if (loading) { loading = false; render(); } }
     }
 
-    async function submitBooking(key, name, phone) {
-      const url = `${SCRIPT_URL}?action=book&key=${encodeURIComponent(key)}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&_=${Date.now()}`;
+    async function submitBooking(key, name, phone, date, time) {
+      const url = `${SCRIPT_URL}?action=book&key=${encodeURIComponent(key)}&date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&_=${Date.now()}`;
       const res = await fetch(url, { redirect: "follow" });
       return res.json();
     }
@@ -290,6 +317,19 @@
       selectedSlot = null;
     }
 
+    function showConfirmModal(slot) {
+      document.getElementById("confirm-date").textContent =
+        `${DAYS_FULL_IT[slot.date.getDay()]} ${slot.date.getDate()} ${MONTHS_IT[slot.date.getMonth()]}`;
+      document.getElementById("confirm-time").innerHTML =
+        `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#a3e635" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>` +
+        `${slot.slot.label} \u2192 ${slot.slot.endLabel} \u00b7 90 MIN`;
+      document.getElementById("modal-confirm").style.display = "flex";
+    }
+
+    function closeConfirmModal() {
+      document.getElementById("modal-confirm").style.display = "none";
+    }
+
     async function confirmBooking() {
       const name  = document.getElementById("input-name").value.trim();
       const phone = document.getElementById("input-phone").value.trim();
@@ -307,9 +347,12 @@
       btn.innerHTML = `<svg class="animate-spin" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Attendi...`;
 
       const key = bookingKey(selectedSlot.date, selectedSlot.slot.key);
+      const s   = selectedSlot;
+      const dateFormatted = `${pad(s.date.getDate())}/${pad(s.date.getMonth()+1)}/${s.date.getFullYear()}`;
+      const timeFormatted = `${s.slot.label} → ${s.slot.endLabel}`;
 
       try {
-        const result = await submitBooking(key, name, phone);
+        const result = await submitBooking(key, name, phone, dateFormatted, timeFormatted);
         if (result.error) {
           errEl.textContent  = result.error === "Slot già prenotato"
             ? "Questo slot è stato appena prenotato da qualcun altro"
@@ -318,10 +361,11 @@
           loadBookings();
         } else {
           bookings.add(key);
+          const bookedSlot = selectedSlot;
           closeBookModal();
-          showToast(`Prenotazione confermata · ${selectedSlot.slot.label}`);
           selectedSlot = null;
           render();
+          showConfirmModal(bookedSlot);
         }
       } catch (e) {
         errEl.textContent  = "Errore di connessione. Riprova.";

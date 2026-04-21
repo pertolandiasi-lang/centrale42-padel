@@ -28,12 +28,14 @@ function getSheet() {
   let sheet = ss.getSheetByName("Prenotazioni");
   if (!sheet) {
     sheet = ss.insertSheet("Prenotazioni");
-    sheet.appendRow(["Chiave", "Nome", "Telefono", "Data"]);
-    sheet.getRange(1, 1, 1, 4).setFontWeight("bold");
+    sheet.appendRow(["Chiave", "Data Scelta", "Orario Scelto", "Nome e Cognome", "Telefono", "Data e Ora di prenotazione"]);
+    sheet.getRange(1, 1, 1, 6).setFontWeight("bold");
     sheet.setColumnWidth(1, 160);
-    sheet.setColumnWidth(2, 160);
-    sheet.setColumnWidth(3, 140);
-    sheet.setColumnWidth(4, 160);
+    sheet.setColumnWidth(2, 120);
+    sheet.setColumnWidth(3, 160);
+    sheet.setColumnWidth(4, 180);
+    sheet.setColumnWidth(5, 140);
+    sheet.setColumnWidth(6, 200);
   }
   return sheet;
 }
@@ -48,6 +50,8 @@ function listBookings() {
 
 function createBooking(params) {
   const key   = params.key;
+  const date  = params.date  || "";
+  const time  = params.time  || "";
   const name  = params.name;
   const phone = params.phone;
 
@@ -67,7 +71,7 @@ function createBooking(params) {
   }
 
   const dateStr = Utilities.formatDate(new Date(), "Europe/Rome", "dd/MM/yyyy HH:mm");
-  sheet.appendRow([key, name, phone, dateStr]);
+  sheet.appendRow([key, date, time, name, phone, dateStr]);
   return jsonResponse({ ok: true });
 }
 
